@@ -2,39 +2,70 @@
 #include "comicsdb.h"
 
 #include <pistache/endpoint.h>
+#include <pistache/http.h>
+#include <pistache/net.h>
+#include <pistache/router.h>
+
+#include <memory>
+#include <thread>
 
 namespace comicService
 {
 
-#if 0
-std::shared_ptr<restbed::Settings> getSettings()
-{
-    auto settings = std::make_shared<restbed::Settings>();
-    settings->set_default_header("Connection", "close");
-    return settings;
-}
-#endif
-
-class ComicHandler : public Pistache::Http::Handler
+class Service
 {
 public:
-    HTTP_PROTOTYPE(ComicHandler)
-
-    void onRequest(const Pistache::Http::Request &request, Pistache::Http::ResponseWriter response)
+    Service(uint16_t portNum = 8000, unsigned int numThreads = std::thread::hardware_concurrency())
+        : m_numThreads(numThreads),
+        m_address("localhost", portNum),
+        m_endPoint(std::make_shared<Pistache::Http::Endpoint>(m_address)),
+        m_db(comicsdb::load())
     {
-        response.send(Pistache::Http::Code::Ok, "Hello world\n");
     }
+
+    void run();
+
+private:
+    void configureRoutes();
+
+    void getComic(const Pistache::Rest::Request &request, Pistache::Http::ResponseWriter response);
+
+    unsigned int m_numThreads;
+    Pistache::Address m_address;
+    std::shared_ptr<Pistache::Http::Endpoint> m_endPoint;
+    Pistache::Rest::Router m_router;
+    comicsdb::ComicDb m_db;
 };
 
-void run()
+void Service::configureRoutes()
 {
-    Pistache::Address addr(Pistache::Ipv4::any(), Pistache::Port(8080));
+    Pistache::Rest::Routes::Get(m_router, "/comic/:id", Pistache::Rest::Routes::bind(&Service::getComic, this));
+}
 
-    auto opts = Pistache::Http::Endpoint::options().threads(1);
-    Pistache::Http::Endpoint server(addr);
-    server.init(opts);
-    server.setHandler(Pistache::Http::make_handler<ComicHandler>());
-    server.serve();
+void Service::getComic(const Pistache::Rest::Request &request, Pistache::Http::ResponseWriter response)
+{
+    std::size_t id = request.param(":id").as<std::size_t>();
+    try
+    {
+        comicsdb::Comic comic = comicsdb::readComic(m_db, id);
+        response.send(Pistache::Http::Code::Ok, comicsdb::toJson(comic));
+    }
+    catch (const std::runtime_error &bang)
+    {
+        response.send(Pistache::Http::Code::Not_Found, bang.what());
+    }
+    catch (...)
+    {
+        response.send(Pistache::Http::Code::Internal_Server_Error, "Internal error");
+    }
+}
+
+void Service::run()
+{
+    m_endPoint->init(Pistache::Http::Endpoint::options().threads(m_numThreads));
+    configureRoutes();
+    m_endPoint->setHandler(m_router.handler());
+    m_endPoint->serve();
 }
 
 } // namespace comicService
@@ -43,7 +74,8 @@ int main()
 {
     try
     {
-        comicService::run();
+        comicService::Service service;
+        service.run();
     }
     catch (const std::exception &bang)
     {
