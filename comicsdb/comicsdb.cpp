@@ -73,7 +73,7 @@ void updateComic(ComicDb &db, std::size_t id, const Comic &comic)
     db[id] = comic;
 }
 
-void createComic(ComicDb &db, Comic &&comic)
+std::size_t createComic(ComicDb &db, Comic &&comic)
 {
     if (comic.title.empty() || comic.issue < 1 ||
         comic.writer.empty() || comic.penciler.empty() ||
@@ -84,7 +84,10 @@ void createComic(ComicDb &db, Comic &&comic)
     }
 
     std::unique_lock<std::mutex> lock(g_dbMutex);
+    // ids are zero-based
+    const std::size_t id = db.size();
     db.push_back(comic);
+    return id;
 }
 
 } // namespace comicsdb
