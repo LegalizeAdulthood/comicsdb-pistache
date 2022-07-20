@@ -8,6 +8,7 @@
 #include <pistache/router.h>
 
 #include <memory>
+#include <string>
 #include <thread>
 
 namespace comicService
@@ -30,7 +31,10 @@ public:
 private:
     void configureRoutes();
 
-    void getComic(const Pistache::Rest::Request &request, Pistache::Http::ResponseWriter response);
+    using Request = Pistache::Rest::Request;
+    using Response = Pistache::Http::ResponseWriter;
+    void getComic(const Request &request, Response response);
+    void deleteComic(const Request &request, Response response);
 
     uint16_t m_portNum;
     unsigned int m_numThreads;
@@ -43,15 +47,34 @@ private:
 void Service::configureRoutes()
 {
     Pistache::Rest::Routes::Get(m_router, "/comic/:id", Pistache::Rest::Routes::bind(&Service::getComic, this));
+    Pistache::Rest::Routes::Delete(m_router, "/comic/:id", Pistache::Rest::Routes::bind(&Service::deleteComic, this));
 }
 
-void Service::getComic(const Pistache::Rest::Request &request, Pistache::Http::ResponseWriter response)
+void Service::getComic(const Request &request, Response response)
 {
     std::size_t id = request.param(":id").as<std::size_t>();
     try
     {
         comicsdb::Comic comic = comicsdb::readComic(m_db, id);
         response.send(Pistache::Http::Code::Ok, comicsdb::toJson(comic), MIME(Application, Json));
+    }
+    catch (const std::runtime_error &bang)
+    {
+        response.send(Pistache::Http::Code::Not_Found, bang.what(), MIME(Text, Plain));
+    }
+    catch (...)
+    {
+        response.send(Pistache::Http::Code::Internal_Server_Error, "Internal error", MIME(Text, Plain));
+    }
+}
+
+void Service::deleteComic(const Request &request, Response response)
+{
+    std::size_t id = request.param(":id").as<std::size_t>();
+    try
+    {
+        comicsdb::deleteComic(m_db, id);
+        response.send(Pistache::Http::Code::Ok, "Comic " + std::to_string(id) + " deleted.", MIME(Text, Plain));
     }
     catch (const std::runtime_error &bang)
     {
