@@ -16,7 +16,8 @@ class Service
 {
 public:
     Service(uint16_t portNum = 8000, unsigned int numThreads = std::thread::hardware_concurrency())
-        : m_numThreads(numThreads),
+        : m_portNum(portNum),
+        m_numThreads(numThreads),
         m_address("localhost", portNum),
         m_endPoint(std::make_shared<Pistache::Http::Endpoint>(m_address)),
         m_db(comicsdb::load())
@@ -30,6 +31,7 @@ private:
 
     void getComic(const Pistache::Rest::Request &request, Pistache::Http::ResponseWriter response);
 
+    uint16_t m_portNum;
     unsigned int m_numThreads;
     Pistache::Address m_address;
     std::shared_ptr<Pistache::Http::Endpoint> m_endPoint;
@@ -62,6 +64,7 @@ void Service::getComic(const Pistache::Rest::Request &request, Pistache::Http::R
 
 void Service::run()
 {
+    std::cout << "Starting on port " << m_portNum << " with " << m_numThreads << " threads.\n";
     m_endPoint->init(Pistache::Http::Endpoint::options().threads(m_numThreads));
     configureRoutes();
     m_endPoint->setHandler(m_router.handler());
