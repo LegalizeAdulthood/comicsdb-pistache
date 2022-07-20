@@ -4,8 +4,6 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include <restbed>
-
 namespace comicsdb
 {
 

@@ -1,6 +1,6 @@
 #include "comic.h"
 
-#include <restbed>
+#include <pistache/endpoint.h>
 
 #include <iostream>
 #include <mutex>
@@ -10,6 +10,7 @@
 namespace comicsdb
 {
 
+#if 0
 std::mutex g_dbMutex;
 using ComicDb = std::vector<Comic>;
 using SessionPtr = std::shared_ptr<restbed::Session>;
@@ -226,6 +227,29 @@ void runService()
     service.set_logger(std::make_shared<CustomLogger>());
     service.start(getSettings());
 }
+#endif
+
+class HelloHandler : public Pistache::Http::Handler
+{
+public:
+    HTTP_PROTOTYPE(HelloHandler)
+
+    void onRequest(const Pistache::Http::Request &request, Pistache::Http::ResponseWriter response)
+    {
+        response.send(Pistache::Http::Code::Ok, "Hello world\n");
+    }
+};
+
+void runServer()
+{
+    Pistache::Address addr(Pistache::Ipv4::any(), Pistache::Port(8080));
+
+    auto opts = Pistache::Http::Endpoint::options().threads(1);
+    Pistache::Http::Endpoint server(addr);
+    server.init(opts);
+    server.setHandler(Pistache::Http::make_handler<HelloHandler>());
+    server.serve();
+}
 
 } // namespace comicsdb
 
@@ -233,7 +257,7 @@ int main()
 {
     try
     {
-        comicsdb::runService();
+        comicsdb::runServer();
     }
     catch (const std::exception &bang)
     {
