@@ -3,6 +3,7 @@
 
 #include <pistache/endpoint.h>
 #include <pistache/http.h>
+#include <pistache/mime.h>
 #include <pistache/net.h>
 #include <pistache/router.h>
 
@@ -50,15 +51,15 @@ void Service::getComic(const Pistache::Rest::Request &request, Pistache::Http::R
     try
     {
         comicsdb::Comic comic = comicsdb::readComic(m_db, id);
-        response.send(Pistache::Http::Code::Ok, comicsdb::toJson(comic));
+        response.send(Pistache::Http::Code::Ok, comicsdb::toJson(comic), MIME(Application, Json));
     }
     catch (const std::runtime_error &bang)
     {
-        response.send(Pistache::Http::Code::Not_Found, bang.what());
+        response.send(Pistache::Http::Code::Not_Found, bang.what(), MIME(Text, Plain));
     }
     catch (...)
     {
-        response.send(Pistache::Http::Code::Internal_Server_Error, "Internal error");
+        response.send(Pistache::Http::Code::Internal_Server_Error, "Internal error", MIME(Text, Plain));
     }
 }
 
