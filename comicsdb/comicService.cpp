@@ -52,6 +52,7 @@ void Service::configureRoutes()
     Pistache::Rest::Routes::Delete(m_router, "/comic/:id", Pistache::Rest::Routes::bind(&Service::deleteComic, this));
     Pistache::Rest::Routes::Put(m_router, "/comic/:id", Pistache::Rest::Routes::bind(&Service::updateComic, this));
     Pistache::Rest::Routes::Put(m_router, "/comic", Pistache::Rest::Routes::bind(&Service::createComic, this));
+    Pistache::Rest::Routes::Post(m_router, "/comic", Pistache::Rest::Routes::bind(&Service::createComic, this));
 }
 
 void Service::getComic(const Request &request, Response response)
