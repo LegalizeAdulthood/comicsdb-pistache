@@ -57,9 +57,9 @@ void Service::configureRoutes()
 
 void Service::getComic(const Request &request, Response response)
 {
-    std::size_t id = request.param(":id").as<std::size_t>();
     try
     {
+        std::size_t id = request.param(":id").as<std::size_t>();
         comicsdb::Comic comic = comicsdb::readComic(m_db, id);
         response.send(Pistache::Http::Code::Ok, comicsdb::toJson(comic), MIME(Application, Json));
     }
@@ -75,9 +75,9 @@ void Service::getComic(const Request &request, Response response)
 
 void Service::deleteComic(const Request &request, Response response)
 {
-    std::size_t id = request.param(":id").as<std::size_t>();
     try
     {
+        std::size_t id = request.param(":id").as<std::size_t>();
         comicsdb::deleteComic(m_db, id);
         response.send(Pistache::Http::Code::Ok, "Comic " + std::to_string(id) + " deleted.", MIME(Text, Plain));
     }
@@ -93,9 +93,9 @@ void Service::deleteComic(const Request &request, Response response)
 
 void Service::updateComic(const Request &request, Response response)
 {
-    std::size_t id = request.param(":id").as<std::size_t>();
     try
     {
+        std::size_t id = request.param(":id").as<std::size_t>();
         std::string json = request.body();
         comicsdb::Comic comic(comicsdb::fromJson(json));
         comicsdb::updateComic(m_db, id, comic);
